@@ -7,7 +7,6 @@ Designed for Render deployment
 import os
 import logging
 from io import BytesIO
-import requests
 from dotenv import load_dotenv
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import (
@@ -72,7 +71,7 @@ class LanguageBot:
         welcome_msg = (
             "👋 Til Talaffuzi Botiga xush kelibsiz!\n\n"
             "🎯 Menga ingliz yoki koreys tilida istalgan so'z yoki iboralarni yuboring, "
-            "men esa talaffuz audio yuboray man.\n\n"
+            "men esa talaffuz audio yuboraman.\n\n"
             "Buyruqlar:\n"
             "/start - Botni boshlash\n"
             "/language - Tilni tanlash\n"
@@ -81,6 +80,7 @@ class LanguageBot:
         )
         
         await update.message.reply_text(welcome_msg, reply_markup=get_initial_keyboard())
+        logger.info(f"User {user_id} started the bot")
     
     @staticmethod
     async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -134,6 +134,7 @@ class LanguageBot:
                 "Talaffuzini eshitish uchun so'z yoki iboralarni yuboring!",
                 reply_markup=get_main_keyboard()
             )
+            logger.info(f"User {user_id} changed language to English")
         
         elif text == "🇰🇷 Koreys":
             user_languages[user_id] = 'ko'
@@ -142,6 +143,7 @@ class LanguageBot:
                 "Talaffuzini eshitish uchun so'z yoki iboralarni yuboring!",
                 reply_markup=get_main_keyboard()
             )
+            logger.info(f"User {user_id} changed language to Korean")
     
     @staticmethod
     async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -156,6 +158,13 @@ class LanguageBot:
         
         if not text:
             await update.message.reply_text("Iltimos, so'z yoki iboralarni yuboring!")
+            return
+        
+        # Limit text length
+        if len(text) > 500:
+            await update.message.reply_text(
+                "❌ Matn juda uzun! Maksimal 500 belgi ruxsat etilgan."
+            )
             return
         
         # Get user's language preference
@@ -193,7 +202,7 @@ class LanguageBot:
             logger.info(f"Audio sent for user {user_id}: {text} ({lang_code})")
             
         except Exception as e:
-            logger.error(f"Error generating audio: {e}")
+            logger.error(f"Error generating audio: {e}", exc_info=True)
             await processing_msg.edit_text(
                 "❌ Kechirasiz, audiodni yarata olmadim. "
                 "Iltimos, boshqa so'z yoki iboralar bilan qayta urinib ko'ring."
@@ -209,7 +218,7 @@ class LanguageBot:
                 "⚠️ Xatolik yuz berdi. Iltimos, keyinroq qayta urinib ko'ring."
             )
 
-async def main():
+def main():
     """Main function to run the bot"""
     # Get bot token from environment variable
     TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
@@ -232,31 +241,9 @@ async def main():
     )
     application.add_error_handler(LanguageBot.error_handler)
     
-    # Start the bot with proper error handling
-    logger.info("Bot started on Render!")
-    try:
-        await application.run_polling(allowed_updates=Update.ALL_TYPES)
-    except KeyboardInterrupt:
-        logger.info("Bot stopped by user")
-    except Exception as e:
-        logger.error(f"Fatal error: {e}")
-        raise
+    # Start the bot
+    logger.info("🚀 Bot started on Render!")
+    application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == '__main__':
-    import asyncio
-    
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-    
-    try:
-        loop.run_until_complete(main())
-    except KeyboardInterrupt:
-        logger.info("Bot stopped by user")
-    except Exception as e:
-        logger.error(f"Fatal error: {e}")
-        raise
-    finally:
-        loop.close()
+    main()
