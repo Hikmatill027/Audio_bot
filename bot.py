@@ -72,10 +72,6 @@ class LanguageBot:
             "👋 Til Talaffuzi Botiga xush kelibsiz!\n\n"
             "🎯 Menga ingliz yoki koreys tilida istalgan so'z yoki iboralarni yuboring, "
             "men esa talaffuz audio yuboraman.\n\n"
-            "Buyruqlar:\n"
-            "/start - Botni boshlash\n"
-            "/language - Tilni tanlash\n"
-            "/help - Yordam ko'rsatish\n\n"
             f"Joriy til: {LanguageBot.LANGUAGES['en']['name']} 🇺🇸"
         )
         
